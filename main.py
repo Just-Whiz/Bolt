@@ -66,5 +66,10 @@ async def assign(ctx):
 @bot.command()
 @commands.has_role(server_role)
 async def secret(ctx):
+    if role:
+        await ctx.author.remove_roles(role)
+        await ctx.send(f"{ctx.author.mention} has now been removed the {server_role} role.")
+    else:
+        await ctx.send("Role doesn't exist.")
 
     bot.run(token, log_handler=handler, log_level=logging.DEBUG) # Starts the bot using the provided token and sets up logging to a file named 'discord.log' with a log level of DEBUG, which will capture detailed information about the bot's activity for troubleshooting and monitoring purposes.
