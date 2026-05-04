@@ -2,7 +2,7 @@
 # Author: orbandit (@just_whiz on Discord)
 # Date: 2026-05-01
 # Description: A discord bot that reads discord messages and writes to a Google Spreadsheet to log new members of the Garde Imperiale server.
-# Version: 0.0.1
+# Version: 0.0.2
 
 
 # Import essential libraries for the bot's functions
