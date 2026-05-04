@@ -25,6 +25,8 @@ intents.members = True
 # Create a new instance of the Bot class with the specified command prefix and intents. The command prefix is set to '!', which means that any message starting with '!' will be treated as a command. The intents specify what events the bot will listen to, such as messages and member updates.
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+server_role = "Gamer"
+
 #This bot event is triggered when the bot successfully connects to Discord and is ready to start receiving events. It prints a message to the console indicating that the bot has logged in, along with the bot's username and ID. This is useful for confirming that the bot is running and connected properly (for debugging purposes)
 @bot.event
 async def on_ready():
@@ -48,5 +50,16 @@ async def on_message(message):
         await message.channel.send(f'Hello {message.author.mention}!') # Sends a greeting by pinging the member who said "hello"
 
     await bot.process_commands(message) # Allows the bot to continue processing the rest of the commands
+
+@bot.command()
+async def hello(ctx):
+    await ctx.send(f"Hello {ctx.author.mention}!") # Responds to the !hello command with a greeting that mentions the user who issued the command
+
+@bot.command()
+async def assign(ctx):
+    role = discord.utils.get(ctx.guild.roles, name=server_role)
+    if role:
+        await ctx.author.add_roles(role)
+        await ctx.send(f"{ctx.author.mention} has now been assigned the {server_role} role.")
 
 bot.run(token, log_handler=handler, log_level=logging.DEBUG) # Starts the bot using the provided token and sets up logging to a file named 'discord.log' with a log level of DEBUG, which will capture detailed information about the bot's activity for troubleshooting and monitoring purposes.
