@@ -25,7 +25,7 @@ intents.members = True
 # Create a new instance of the Bot class with the specified command prefix and intents. The command prefix is set to '!', which means that any message starting with '!' will be treated as a command. The intents specify what events the bot will listen to, such as messages and member updates.
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-server_role = "Gamer"
+server_role = "gamer"
 
 #This bot event is triggered when the bot successfully connects to Discord and is ready to start receiving events. It prints a message to the console indicating that the bot has logged in, along with the bot's username and ID. This is useful for confirming that the bot is running and connected properly (for debugging purposes)
 @bot.event
@@ -37,8 +37,7 @@ async def on_ready():
 async def on_member_join(member):
     await member.send(f"Welcome to the server {member.name}! We're glad to have you here. If you have any questions, feel free to ask the moderators or check out the rules channel. Enjoy your stay!")
 
-# This bot event listens for messages in the server and responds to them. You can customize the responses based on the content of the message. In this example, it responds to any message that contains "hello" with a greeting that mentions the user who sent the message.
-@bot.event
+# This bot event listens for messages in the server
 async def on_message(message):
     
     # Prevents the bot from responding to its own messages, which could lead to infinite loops
@@ -61,5 +60,11 @@ async def assign(ctx):
     if role:
         await ctx.author.add_roles(role)
         await ctx.send(f"{ctx.author.mention} has now been assigned the {server_role} role.")
+    else:
+        await ctx.send("Role doesn't exist.")
 
-bot.run(token, log_handler=handler, log_level=logging.DEBUG) # Starts the bot using the provided token and sets up logging to a file named 'discord.log' with a log level of DEBUG, which will capture detailed information about the bot's activity for troubleshooting and monitoring purposes.
+@bot.command()
+@commands.has_role(server_role)
+async def secret(ctx):
+
+    bot.run(token, log_handler=handler, log_level=logging.DEBUG) # Starts the bot using the provided token and sets up logging to a file named 'discord.log' with a log level of DEBUG, which will capture detailed information about the bot's activity for troubleshooting and monitoring purposes.
