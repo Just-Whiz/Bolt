@@ -65,11 +65,12 @@ async def assign(ctx):
 
 @bot.command()
 @commands.has_role(server_role)
-async def secret(ctx):
+async def secret(ctx): # must redo as this is not how to do this, need to check if the user has the role in the function and not as a decorator
+    role = discord.utils.get(ctx.guild.roles, name=server_role)
     if role:
         await ctx.author.remove_roles(role)
         await ctx.send(f"{ctx.author.mention} has now been removed the {server_role} role.")
     else:
         await ctx.send("Role doesn't exist.")
 
-    bot.run(token, log_handler=handler, log_level=logging.DEBUG) # Starts the bot using the provided token and sets up logging to a file named 'discord.log' with a log level of DEBUG, which will capture detailed information about the bot's activity for troubleshooting and monitoring purposes.
+bot.run(token, log_handler=handler, log_level=logging.DEBUG) # Starts the bot using the provided token and sets up logging to a file named 'discord.log' with a log level of DEBUG, which will capture detailed information about the bot's activity for troubleshooting and monitoring purposes.
