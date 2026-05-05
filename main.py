@@ -10,6 +10,7 @@ import discord
 from discord.ext import commands
 import logging
 import os
+import re
 from dotenv import load_dotenv
 from datetime import timezone
 import gspread
@@ -24,11 +25,46 @@ CREDENTIALS_PATH = os.getenv('GOOGLE_CREDENTIALS_PATH', 'credentials.json') # Re
 SPREADSHEET_ID = os.getenv('SPREADSHEET_ID') # Retrieves the ID of the Google Spreadsheet from the environment variables, which is needed to specify which spreadsheet the bot will log messages to. The SPREADSHEET_ID is a unique identifier for the spreadsheet and can be found in the URL of the Google Sheet.
 LOG_SHEET_NAME = os.getenv('LOG_SHEET_NAME', 'Garde Nationale Test Example') # Retrieves the name of the sheet within the Google Spreadsheet where logs will be stored from the environment variables, with a default value of 'Garde Nationale Test Example' if the variable is not set. This allows you to specify which sheet in the spreadsheet will be used for logging messages.
 
+print(f"[CONFIG] Credentials path: {os.path.abspath(CREDENTIALS_PATH)}") # Prints the absolute path to the Google credentials JSON file to the console for debugging purposes, allowing you to verify that the correct path is being used for authentication with the Google Sheets API.
+print(f"[CONFIG] Credentials exist: {os.path.exists}")
+print(f"[CONFIG] Spreadsheet ID: {SPREADSHEET_ID}") # Prints the ID of the Google Spreadsheet to the console for debugging purposes.
+print(f"[CONFIG] Spreadheet name: '{LOG_SHEET_NAME}'") # Prints the name of the sheet within the Google Spreadsheet where logs will be stored to the console for debugging purposes.
+
 # Google Sheet setup
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/drive'
 ]
+
+# Company mapping with dictionaries (for the spreadsheet sorting)
+EUNA_COMPANIES = {'7EME', '8EME', 'FLQC'} # EU/NA companies
+ASOC_COMPANIES = {'4EME', '5EME', '6EME', 'FLQC'} # AS/OC companies
+
+# Matches company labels like **7EME** or **FLQG** in the messages
+COMPANY_PATTERN = re.compile(r'\*\*([A-Z0-9]+(?:EME|FLQG|FLQC))\*\*') # This regular expression pattern is designed to match company labels in the format of **7EME**, **8EME**, **FLQC**, etc. It looks for text that starts and ends with double asterisks (**) and contains a combination of uppercase letters and numbers followed by either "EME", "FLQG", or "FLQC". This allows the bot to identify and extract company labels from messages for logging purposes.
+
+# Matches user pings like <@123456789012345678> in the messages
+MENTION_PATTERN = re.compile(r'<@!?(\d+)>') # This regular expression pattern is designed to match user mentions in the format of <@123456789012345678> or <@!123456789012345678>. It looks for text that starts with "<@", followed by an optional "!" (which is used for nicknamed users), and then captures a sequence of digits (the user ID) until it reaches the closing ">". This allows the bot to identify and extract user mentions from messages for logging purposes.
+
+# Trigger phrase that identifies the GN Induction graduation msgs
+GRADUATION_TRIGGER = "Garde Nationale Graduates"
+
+def get_timezone(company: str) -> str:
+    """
+    Returns the timezone for a given company based on predefined sets of companies. 
+    This function checks if the provided company name is in the EUNA_COMPANIES set or 
+    the ASOC_COMPANIES set and returns the corresponding timezone string. If the 
+    company is not found in either set, it returns 'Unknown'. 
+    This is useful for categorizing messages based on the company mentioned in them, 
+    allowing for better organization and analysis of logged data in the Google Sheet.
+    """
+    if company in EUNA_COMPANIES: # Checks if the provided company name is in the EUNA_COMPANIES set, which contains company labels associated with the EU/NA timezone. If the company is found in this set, it indicates that the message is related to a company that operates in the EU/NA region.
+        return 'EUNA' # Returns the string 'EUNA' to indicate that the company belongs to the EU/NA timezone, which can be used for categorizing messages in the Google Sheet based on their associated company and timezone.
+    elif company in ASOC_COMPANIES: # Checks if the provided company name is in the ASOC_COMPANIES set, which contains company labels associated with the AS/OC timezone. If the company is found in this set, it indicates that the message is related to a company that operates in the AS/OC region.
+        return 'ASOC' # Returns the string 'ASOC' to indicate that the company belongs to the AS/OC timezone, which can be used for categorizing messages in the Google Sheet based on their associated company and timezone.
+    else: # If the company is not found in either the EUNA_COMPANIES or ASOC_COMPANIES sets, it means that the company label does not match any of the predefined categories for timezones. In this case, the function will return 'Unknown' to indicate that the timezone for the given company cannot be determined based on the provided sets.
+        return 'Unknown' # Returns the string 'Unknown' to indicate that the timezone for the given company cannot be determined based on the provided sets, which can be useful for handling cases where the company label does not match any of the expected categories when logging messages in the Google Sheet.
+    
 
 class SheetsLogger:
     def __init__(self, credentials_path: str, spreadsheet_id: str, sheet_name: str):
@@ -36,9 +72,9 @@ class SheetsLogger:
         This class function handles authentication with the Google Sheets API using a service account and sets up the connection to the specified spreadsheet and sheet. It uses the gspread library to authorize access to the Google Sheets API with the provided credentials and opens the specified spreadsheet and worksheet for logging messages. The credentials are loaded from a JSON file, and the necessary scopes for accessing spreadsheets 
         and drive are defined to ensure proper permissions for reading and writing data to the Google Sheet.
         """
-        creds = Credentials.from_service_account_file(credentials_path, scopes=SCOPES)
-        client = gspread.authorize(creds)
-        self.sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name)
+        creds = Credentials.from_service_account_file(credentials_path, scopes=SCOPES) # Loads the service account credentials from the specified JSON file and sets the required scopes for accessing the Google Sheets API. This allows the bot to authenticate with Google and gain the necessary permissions to read and write data to the specified spreadsheet.
+        client = gspread.authorize(creds) # Authorizes the gspread client with the loaded credentials, allowing it to interact with the Google Sheets API using the authenticated service account. This step is essential for enabling the bot to access and modify the specified spreadsheet and sheet for logging messages.
+        self.sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name) # Opens the specified Google Spreadsheet using its unique ID and selects the specified worksheet (sheet) within that spreadsheet for logging messages. This sets up the connection to the Google Sheet where the bot will append rows of message data as it logs messages received in Discord.
 
     def log_message(self, message: discord.Message):
         """Extract all desired fields and append a row to the sheet."""
