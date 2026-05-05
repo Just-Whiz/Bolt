@@ -41,7 +41,7 @@ EUNA_COMPANIES = {'7EME', '8EME', 'FLQC'} # EU/NA companies
 ASOC_COMPANIES = {'4EME', '5EME', '6EME', 'FLQC'} # AS/OC companies
 
 # Matches company labels like **7EME** or **FLQG** in the messages
-COMPANY_PATTERN = re.compile(r'\*\*([A-Z0-9]+(?:EME|FLQG|FLQC))\*\*') # This regular expression pattern is designed to match company labels in the format of **7EME**, **8EME**, **FLQC**, etc. It looks for text that starts and ends with double asterisks (**) and contains a combination of uppercase letters and numbers followed by either "EME", "FLQG", or "FLQC". This allows the bot to identify and extract company labels from messages for logging purposes.
+COMPANY_PATTERN = re.compile(r'\*\*([A-Z0-9]*(?:EME|FLQG|FLQC))\*\*')  # This function
 
 # Matches user pings like <@123456789012345678> in the messages
 MENTION_PATTERN = re.compile(r'<@!?(\d+)>') # This regular expression pattern is designed to match user mentions in the format of <@123456789012345678> or <@!123456789012345678>. It looks for text that starts with "<@", followed by an optional "!" (which is used for nicknamed users), and then captures a sequence of digits (the user ID) until it reaches the closing ">". This allows the bot to identify and extract user mentions from messages for logging purposes.
