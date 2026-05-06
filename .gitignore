@@ -1,5 +1,5 @@
 .env
 !test.env
-discord.log
+bolt.log
 credentials.json
 !test_credentials.json
