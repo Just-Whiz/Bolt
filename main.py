@@ -4,7 +4,6 @@
 # Description: Discord message logger that logs to Google Sheets
 # Version: 0.1.0
 
-
 # Import essential libraries for the bot's functions (e.g. discord, logging, os, dotenv for environment variables, gspread and google-auth for Google Sheets integration). These libraries provide the necessary tools to create a Discord bot, handle logging, manage environment variables securely, and interact with Google Sheets for data storage.
 import discord
 from discord.ext import commands
@@ -25,25 +24,25 @@ CREDENTIALS_PATH = os.getenv('GOOGLE_CREDENTIALS_PATH', 'credentials.json') # Re
 SPREADSHEET_ID = os.getenv('SPREADSHEET_ID') # Retrieves the ID of the Google Spreadsheet from the environment variables, which is needed to specify which spreadsheet the bot will log messages to. The SPREADSHEET_ID is a unique identifier for the spreadsheet and can be found in the URL of the Google Sheet.
 LOG_SHEET_NAME = os.getenv('LOG_SHEET_NAME', 'Garde Nationale Test Example') # Retrieves the name of the sheet within the Google Spreadsheet where logs will be stored from the environment variables, with a default value of 'Garde Nationale Test Example' if the variable is not set. This allows you to specify which sheet in the spreadsheet will be used for logging messages.
 
-
-
 # ------------------------ LOGGING SETUP ----------------------------------------
 
 LOG_FILE = 'bolt.log' # The logging file that will be written to each time the bot is run
 
-logging.basicConfig(
+logging.basicConfig( # Configuration for the log file and its format (e.g. the hader information, etc.)
     level=logging.DEBUG,
     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
     datefmt = '%Y-%m-%dT%H:%M:%S',
     handlers = [
         logging.FileHandler(LOG_FILE, encoding='utf-8', mode='a'),
-        logging.StreamHandler()
+        #logging.StreamHandler() # Can choose to have everything logged in the log show up in the terminal by uncommenting this line of code - otherwise kept commented to keep the terminal clean when not actively debugging/fleecing the code.
     ]
-)
+) # NOTE: this config will log all actions in the log, and will not show up in the terminal unless logging.StreamHandler() is uncommented. It's recommended unless you're actively debugging to NOT spit everything out into the terminal for the sake of saving memory overhead & resources.
 
 # Sets up the log and log handling
 bolt_log = logging.getLogger('bolt')
 handler = logging.FileHandler(LOG_FILE, encoding='utf-8', mode='a')
+
+#------------------------ TERMINAL & LOG OUTPUT ----------------------------------------
 
 # Initial setup of logging of all global variables
 bolt_log.info(f"[CONFIG] Credentials path: {os.path.abspath(CREDENTIALS_PATH)}")
@@ -57,6 +56,8 @@ print(f"[CONFIG] Credentials exist: {os.path.exists}")
 print(f"[CONFIG] Spreadsheet ID: {SPREADSHEET_ID}") # Prints the ID of the Google Spreadsheet to the console for debugging purposes.
 print(f"[CONFIG] Spreadheet name: '{LOG_SHEET_NAME}'") # Prints the name of the sheet within the Google Spreadsheet where logs will be stored to the console for debugging purposes.
 
+
+#------------------------ GOOGLE SPREADSHEET SETUP & SORTING ----------------------------------------
 # Google Sheet setup
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -101,7 +102,7 @@ class SheetsLogger:
         creds = Credentials.from_service_account_file(credentials_path, scopes=SCOPES) # Loads the service account credentials from the specified JSON file and sets the required scopes for accessing the Google Sheets API. This allows the bot to authenticate with Google and gain the necessary permissions to read and write data to the specified spreadsheet.
         client = gspread.authorize(creds) # Authorizes the gspread client with the loaded credentials, allowing it to interact with the Google Sheets API using the authenticated service account. This step is essential for enabling the bot to access and modify the specified spreadsheet and sheet for logging messages.
         self.sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name) # Opens the specified Google Spreadsheet using its unique ID and selects the specified worksheet (sheet) within that spreadsheet for logging messages. This sets up the connection to the Google Sheet where the bot will append rows of message data as it logs messages received in Discord.
-        bolt_log.info(f"[SHEETS] Connected to worksheet: '{sheet_name}")
+        bolt_log.info(f"[SHEETS] Connected to worksheet: '{sheet_name}") # Logs the sheet the bot connects to through the Google API
 
     def ensure_headers(self):
         """
@@ -125,17 +126,17 @@ class SheetsLogger:
                 'GN Host',
             ]
             self.sheet.append_row(headers, value_input_option='USER_ENTERED') # Appends the predefined headers to the first row of the sheet using the append_row method. The value_input_option='USER_ENTERED' parameter ensures that the values are treated as if they were entered by a user, allowing for proper formatting and display in the Google Sheet.
-            bolt_log.info("[SHEETS] Headers written to sheet.")
+            bolt_log.info("[SHEETS] Headers written to sheet.") # Logs that the headers have successfully been created
         else:
-            bolt_log.info("[SHEETS] Headers already present, skipping.")
+            bolt_log.info("[SHEETS] Headers already present, skipping.") # Logs that the program will continue as headers are already present
 
     def log_recruits(self, rows: list[list]): # Defines a method to log multiple recruit rows at once by appending them to the Google Sheet. The method takes a list of lists (rows) as input, where each inner list represents a row of recruit data to be logged. If the list of rows is not empty, it uses the append_rows method to add all the rows to the sheet in one operation, with the value_input_option set to 'USER_ENTERED' to ensure that the data is formatted correctly in the Google Sheet. This allows for efficient logging of multiple recruits at once, reducing the number of API calls and improving performance when logging large batches of recruit data.
         """Appends multiple recruit rows at once."""
         if rows: # Checks if the list of rows is not empty before attempting to append them to the sheet. If the list is empty, it means there are no recruit rows to log, and the function will simply return without making any API calls to append data to the sheet.
             self.sheet.append_rows(rows, value_input_option='USER_ENTERED') # Appends multiple rows of recruit data to the sheet using the append_rows method. The value_input_option='USER_ENTERED' parameter ensures that the values are treated as if they were entered by a user, allowing for proper formatting and display in the Google Sheet. This method is more efficient than appending rows one by one, especially when logging large batches of recruit data.
-            bolt_log.info(f"[SHEETS] Wrote {len(rows)} row(s) to sheet.")
+            bolt_log.info(f"[SHEETS] Wrote {len(rows)} row(s) to sheet.") # Creates a certain number of rows to the sheet based on the number of users present
         else:
-            bolt_log.warning("[SHEETS] log_recruits called with an empty row list.")
+            bolt_log.warning("[SHEETS] log_recruits called with an empty row list.") # Fallback if the function was called with no data present
 
 async def parse_graduation_message(message: discord.Message) -> list[list]:
     """
@@ -189,17 +190,17 @@ async def parse_graduation_message(message: discord.Message) -> list[list]:
             username = '' # Attempt to resolve username from the guild
             try:
                 member = message.guild.get_member(int(user_id))
-                if member:
-                    username = str(member)  # e.g. "just_whiz" or "just_whiz#0000"
-                    bolt_log.debug(f"[PARSE] Resolved {user_id} from cache -> {username}")
+                if member: # If the account being accessed is a server member
+                    username = str(member)  # The username will be referenced as a string (e.g. "just_whiz" or "just_whiz#0000") to be manipulated later
+                    bolt_log.debug(f"[PARSE] Resolved {user_id} from cache -> {username}") # Logs the Discord ID from the user ID
                 else:
                     # Not in cache — fetch from API
                     member = await message.guild.fetch_member(int(user_id)) # Fetches the member information from the Discord API using the user ID. This is necessary if the member is not found in the guild's member cache, which can happen if the member has not been active recently or if the bot has just started and hasn't cached all members yet. By fetching the member information directly from the API, the bot can still resolve the username for logging purposes even if it's not available in the cache.
-                    username = str(member)
-                    bolt_log.debug(f"[PARSE] Fetched {user_id} from API -> {username}")
+                    username = str(member) # The username accessed in this way will also be referenced as a string to be manipulated later
+                    bolt_log.debug(f"[PARSE] Fetched {user_id} from API -> {username}") # If the user is present in the server, the user_id should display normally on the Google Sheet
             except Exception as e:
-                username = f'Unknown ({user_id})'
-                bolt_log.warning(f"[PARSE] Could not receive user {user_id}: {type(e).__name__}: {e}")
+                username = f'Unknown ({user_id})' # If the user could not be found (example: they already left the server, they're not a server member, or their username doesn't show up for whatever reason) the username will show up in the Google sheet as Unknown followed by the user id (ex: Unknown(**insert Discord ID number here))
+                bolt_log.warning(f"[PARSE] Could not receive user {user_id}: {type(e).__name__}: {e}") # If the user could not be found, it will display the error as to why it couldn't be found
 
             row = [ # Builds a row of data for each recruit, containing the timestamp of the message, the recruit's username, their Discord ID, the class date, a blank field for the date they left (to be filled manually later), the timezone label based on their company, the company name, and the host of the graduation message. This structured data will be logged to the Google Sheet for record-keeping and analysis of graduation messages in the Discord server.
                 timestamp, 
@@ -247,12 +248,12 @@ async def on_ready(): # This event handler is called when the bot has successful
 @bot.event # This decorator registers the on_message function as an event handler for the 'message' event, which is triggered whenever a new message is sent in any channel that the bot has access to. This allows the bot to process incoming messages and perform actions based on their content, such as logging graduation messages to Google Sheets or responding to commands.
 async def on_message(message):
     if message.author == bot.user: # Checks if the author of the message is the bot itself. This is a common practice to prevent the bot from responding to its own messages, which could lead to infinite loops or unintended behavior. If the message was sent by the bot, it simply returns without processing the message further.
-        return
+        return # Continue moving the program forward
 
     # Only process graduation messages
     if GRADUATION_TRIGGER not in message.content: # Checks if the graduation trigger phrase is not present in the message content. If the trigger phrase is not found, it means that the message is not a graduation message that the bot is designed to log, so it allows other commands to be processed by calling await bot.process_commands(message) and then returns without further processing. This ensures that the bot only focuses on logging messages that are relevant to its intended functionality (i.e., graduation messages) while still allowing it to respond to other commands as needed.
         await bot.process_commands(message) # Allows the bot to continue processing other commands if the message does not contain the graduation trigger phrase, ensuring that the bot can still respond to other interactions in the server while ignoring messages that are not relevant to its logging functionality.
-        return
+        return # Continue moving the program forward
 
     print(f"[GRADUATION] Detected graduation message from {message.author} in #{message.channel.name}")
     bolt_log.info(f"[BOT] Graduation message detected")
@@ -261,9 +262,11 @@ async def on_message(message):
         try:
             rows = await parse_graduation_message(message) # Calls the parse_graduation_message function to extract recruit data from the graduation message and returns a list of rows, where each row contains details about a recruit such as timestamp, username, Discord ID, class date, timezone, company, and host. This function processes the message content to identify company labels and user mentions, allowing it to build structured data for logging to Google Sheets.
             sheets_logger.log_recruits(rows) # Uses the log_recruits method of the sheets_logger instance to append the extracted recruit data rows to the Google Sheet. This method takes care of formatting the data correctly and ensuring that it is added to the sheet in an efficient manner, allowing for proper record-keeping of graduation messages in the Discord server.
+            print(f"[GRADUATION] Logged {len(rows)} recruit(s) to Google Sheets.")
+            bolt_log.info(f"[BOT] Logged {len(rows)} recruit(s) to Google Sheets.")
         except Exception as e: # Catches any exceptions that occur during the parsing of the graduation message or the logging of recruit data to Google Sheets, and prints an error message to the console for debugging purposes. This helps identify issues that may arise during the processing of graduation messages, such as problems with message formatting, issues with the Google Sheets API, or other unexpected errors that could occur while handling the message content.
             print(f"[GRADUATION] Error logging to Google Sheets: {type(e).__name__}: {e}") # Prints an error message to the console indicating that there was an issue logging the graduation message to Google Sheets, along with the type and details of the exception that occurred. This information is crucial for debugging and resolving any issues that may arise during the logging process.
-            bolt_log.info(f"[Bot] Error initializing Google Sheets logger: {type(e).__name__}: {e}")
+            bolt_log.info(f"[BOT] Error initializing Google Sheets logger: {type(e).__name__}: {e}")
 
     await bot.process_commands(message)
 
